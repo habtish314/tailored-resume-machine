@@ -30,7 +30,7 @@ const Landing = () => {
                 </Link>
               </Button>
               {!currentUser && (
-                <Button size="lg" variant="outline" asChild className="text-white border-white hover:bg-white/10">
+                <Button size="lg" variant="outline" asChild className="text-black border-white hover:bg-white/10">
                   <Link to="/login">
                     I Already Have an Account
                   </Link>
