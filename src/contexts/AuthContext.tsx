@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   googleLogin: () => Promise<void>;
   linkedinLogin: () => Promise<void>;
@@ -78,12 +78,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             name: name,
           },
-          // For development, set this to true to bypass email verification
           emailRedirectTo: window.location.origin + '/dashboard',
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Signup error:', error);
+        
+        // Check if the error is about email signups being disabled
+        if (error.message.includes("Email signups are disabled")) {
+          toast({
+            title: "Email signups disabled",
+            description: "Please use Google or LinkedIn authentication instead.",
+            variant: "destructive",
+          });
+          return { success: false, message: "Email signups are disabled. Please use Google or LinkedIn authentication." };
+        }
+        
+        throw error;
+      }
       
       // Check if the user needs to confirm their email
       if (data?.user && data.user.identities && data.user.identities.length === 0) {
@@ -92,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "This email is already registered. Please log in instead.",
           variant: "destructive",
         });
-        throw new Error("Email already registered");
+        return { success: false, message: "Email already registered" };
       }
       
       // If we're in development mode and confirmation is required but not auto-confirmed
@@ -102,9 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "We've sent a confirmation link to your email address.",
         });
       }
-    } catch (error) {
+      
+      return { success: true };
+    } catch (error: any) {
       console.error('Signup error:', error);
-      throw error;
+      return { success: false, message: error.message };
     } finally {
       setIsLoading(false);
     }
