@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Google, Linkedin } from "lucide-react";
+// Replace Google with Mail icon as alternative
+import { Mail, Linkedin } from "lucide-react";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -201,7 +201,7 @@ const Signup = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  <Google className="mr-2 h-4 w-4" />
+                  <Mail className="mr-2 h-4 w-4" />
                   Google
                 </Button>
                 
