@@ -11,6 +11,11 @@ const Header = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Extract name from user metadata
+  const userName = currentUser?.user_metadata?.name || 
+                  currentUser?.user_metadata?.full_name || 
+                  'User';
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -35,7 +40,7 @@ const Header = () => {
               </Link>
               <div className="flex items-center ml-4">
                 <span className="mr-4 text-gray-600">
-                  Hello, {currentUser.name}
+                  Hello, {userName}
                 </span>
                 <Button variant="outline" onClick={handleLogout}>
                   Log Out
@@ -89,7 +94,7 @@ const Header = () => {
                 </li>
                 <li className="pt-2 border-t">
                   <span className="block text-gray-600 mb-2">
-                    Hello, {currentUser.name}
+                    Hello, {userName}
                   </span>
                   <Button variant="outline" onClick={handleLogout} className="w-full">
                     Log Out
