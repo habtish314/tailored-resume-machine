@@ -19,8 +19,15 @@ serve(async (req) => {
   }
 
   try {
-    // Get request data
-    const { resumeData, type = 'resume' } = await req.json();
+    // Get request data with enhanced options
+    const { 
+      resumeData, 
+      type = 'resume', 
+      customPrompt = '',
+      enhancedGeneration = false,
+      style = 'professional'
+    } = await req.json();
+    
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -47,8 +54,19 @@ serve(async (req) => {
       );
     }
 
-    // Construct the prompt based on resume data
+    // Construct the enhanced prompt based on resume data and options
     let prompt = '';
+    let systemPrompt = '';
+    
+    if (enhancedGeneration) {
+      // Enhanced system prompt with style guidance
+      systemPrompt = `You are an expert professional resume and cover letter writer specializing in the ${style} style. 
+Create highly effective, ATS-friendly content that highlights achievements and key qualifications.
+Use concise bullet points, strong action verbs, and quantifiable results wherever possible.
+Format output in clean, readable markdown that will look professional when rendered.`;
+    } else {
+      systemPrompt = `You are an expert resume and cover letter writer. Create professional ${type} content based on the user's information.`;
+    }
     
     if (type === 'resume') {
       prompt = `Create a professional resume for ${resumeData.personalInfo.name}, who has the following information:
@@ -74,7 +92,7 @@ ${resumeData.certifications.filter(Boolean).length ?
 ${resumeData.hobbies.filter(Boolean).length ? 
   `Hobbies & Interests: ${resumeData.hobbies.filter(Boolean).join(', ')}` : ''}
 
-Please create a well-formatted, professional resume in markdown format. Be concise, highlight achievements, and focus on relevant skills and experiences.`;
+Please create a well-formatted, professional resume in markdown format. Be concise, highlight achievements, and focus on relevant skills and experiences. ${customPrompt}`;
     } else if (type === 'coverLetter') {
       prompt = `Create a professional cover letter for ${resumeData.personalInfo.name}, who has the following information:
       
@@ -88,12 +106,12 @@ ${resumeData.experiences.map(exp =>
 
 Skills: ${resumeData.skills.filter(Boolean).join(', ')}
 
-Please write a general cover letter that can be customized for specific job applications. The cover letter should be in markdown format, professional in tone, and highlight key skills and experiences. Do not reference a specific company, but leave placeholders like [Company Name] and [Position] that can be filled in later.`;
+Please write a general cover letter that can be customized for specific job applications. The cover letter should be in markdown format, professional in tone, and highlight key skills and experiences. Do not reference a specific company, but leave placeholders like [Company Name] and [Position] that can be filled in later. ${customPrompt}`;
     }
 
-    console.log(`Generating ${type} for user ${user.id}`);
+    console.log(`Generating ${type} for user ${user.id} with style: ${style}`);
 
-    // Call OpenAI API
+    // Call OpenAI API with enhanced model selection
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -101,15 +119,15 @@ Please write a general cover letter that can be customized for specific job appl
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: enhancedGeneration ? 'gpt-4o' : 'gpt-4o-mini', // Use more powerful model for enhanced generation
         messages: [
           {
             role: 'system',
-            content: `You are an expert resume and cover letter writer. Create professional ${type} content based on the user's information.`
+            content: systemPrompt
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: style === 'creative' ? 0.8 : 0.6, // Adjust creativity based on style
       }),
     });
 

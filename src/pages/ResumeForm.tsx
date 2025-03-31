@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ResumeProvider } from "@/contexts/ResumeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useResume } from "@/contexts/ResumeContext";
 import { useAIGenerator } from "@/hooks/useAIGenerator";
 import PersonalInfoForm from "@/components/resume/PersonalInfoForm";
@@ -21,7 +20,7 @@ const ResumeFormInner = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { resumeData, setGeneratedContent } = useResume();
-  const { generateContent, isGenerating } = useAIGenerator();
+  const { generateFullResume, isGenerating } = useAIGenerator();
 
   const tabs = [
     { id: "personal", label: "Personal Info" },
@@ -65,17 +64,11 @@ const ResumeFormInner = () => {
     });
 
     try {
-      // Generate resume content
-      const resumeContent = await generateContent(resumeData, 'resume');
+      // Use the enhanced generateFullResume function
+      const fullContent = await generateFullResume(resumeData);
       
-      // Generate cover letter
-      const coverLetterContent = await generateContent(resumeData, 'coverLetter');
-      
-      if (resumeContent && coverLetterContent) {
-        setGeneratedContent({
-          resumeContent,
-          coverLetterContent
-        });
+      if (fullContent) {
+        setGeneratedContent(fullContent);
         
         toast({
           title: "Resume Generated",
@@ -100,13 +93,71 @@ const ResumeFormInner = () => {
     }
   };
 
+  const handleQuickGenerate = async () => {
+    // Check if at least name is provided
+    if (!resumeData.personalInfo.name) {
+      toast({
+        title: "Name Required",
+        description: "Please provide at least your name before quick-generating.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Quick Generating",
+      description: "Creating your resume with minimal information...",
+    });
+
+    try {
+      const fullContent = await generateFullResume(resumeData);
+      
+      if (fullContent) {
+        setGeneratedContent(fullContent);
+        toast({
+          title: "Resume Generated",
+          description: "Your resume has been quick-generated!",
+        });
+        navigate("/resume-preview");
+      }
+    } catch (error) {
+      console.error("Error quick generating:", error);
+      toast({
+        title: "Generation Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       
       <main className="flex-grow bg-gray-50 py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-8 text-resume-primary">Create Your Resume</h1>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-resume-primary">Create Your Resume</h1>
+            
+            <Button
+              onClick={handleQuickGenerate}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Quick Generate with AI
+                </>
+              )}
+            </Button>
+          </div>
           
           <div className="bg-white shadow-md rounded-lg overflow-hidden mb-8">
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">

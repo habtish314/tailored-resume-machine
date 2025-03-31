@@ -9,7 +9,7 @@ export const useAIGenerator = () => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
-  const generateContent = async (resumeData: any, type: 'resume' | 'coverLetter') => {
+  const generateContent = async (resumeData: any, type: 'resume' | 'coverLetter', customPrompt?: string) => {
     if (!currentUser) {
       toast({
         title: "Authentication Required",
@@ -22,8 +22,15 @@ export const useAIGenerator = () => {
     setIsGenerating(true);
 
     try {
+      // Enhanced AI call with more context and options
       const { data, error } = await supabase.functions.invoke('generate-resume-content', {
-        body: { resumeData, type },
+        body: { 
+          resumeData, 
+          type, 
+          customPrompt,
+          enhancedGeneration: true,
+          style: 'professional' // Default style
+        },
       });
 
       if (error) {
@@ -55,8 +62,37 @@ export const useAIGenerator = () => {
     }
   };
 
+  const generateFullResume = async (resumeData: any) => {
+    try {
+      setIsGenerating(true);
+      
+      // Generate both resume and cover letter in one call for consistency
+      const [resumeContent, coverLetterContent] = await Promise.all([
+        generateContent(resumeData, 'resume'),
+        generateContent(resumeData, 'coverLetter')
+      ]);
+      
+      if (!resumeContent || !coverLetterContent) {
+        throw new Error("Failed to generate complete resume package");
+      }
+      
+      return { resumeContent, coverLetterContent };
+    } catch (error) {
+      console.error('Error generating full resume:', error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate complete resume package.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return {
     generateContent,
+    generateFullResume,
     isGenerating
   };
 };
