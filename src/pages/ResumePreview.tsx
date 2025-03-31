@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,13 +22,27 @@ const ResumePreviewInner = () => {
   }
 
   const handleDownload = (type: "resume" | "coverLetter") => {
+    const content = type === "resume" ? generatedContent.resumeContent : generatedContent.coverLetterContent;
+    const filename = `${resumeData.personalInfo.name.replace(/\s+/g, '_')}_${type === "resume" ? "Resume" : "Cover_Letter"}.md`;
+    
+    // Create blob and download
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
     toast({
       title: `${type === "resume" ? "Resume" : "Cover Letter"} Downloaded`,
       description: `Your ${type === "resume" ? "resume" : "cover letter"} has been downloaded successfully.`,
     });
   };
 
-  const handleSaveToDashboard = () => {
+  const handleSaveToDashboard = async () => {
     // Get existing resumes or initialize empty array
     const existingResumes = JSON.parse(localStorage.getItem('userResumes') || '[]');
     
@@ -39,6 +52,10 @@ const ResumePreviewInner = () => {
       title: `${resumeData.personalInfo.name}'s Resume`,
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
+      content: {
+        resumeContent: generatedContent.resumeContent,
+        coverLetterContent: generatedContent.coverLetterContent
+      }
     };
     
     // Save updated resumes

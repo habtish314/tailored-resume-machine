@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,16 +10,33 @@ import Footer from "@/components/Footer";
 import { ResumeProvider } from "@/contexts/ResumeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Trash, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash } from "lucide-react";
 import { useResume } from "@/contexts/ResumeContext";
+import { useAIGenerator } from "@/hooks/useAIGenerator";
+import AIGenerateButton from "@/components/AIGenerateButton";
 
 const PersonalInfoForm = () => {
   const { resumeData, updatePersonalInfo } = useResume();
   const { personalInfo } = resumeData;
+  const { generateContent, isGenerating } = useAIGenerator();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     updatePersonalInfo({ [name]: value });
+  };
+
+  const handleGenerateSummary = async () => {
+    // Generate a summary based on the existing resume data
+    const generatedSummary = await generateContent(resumeData, 'resume');
+    if (generatedSummary) {
+      // Extract just the professional summary section from the full resume
+      const summaryMatch = generatedSummary.match(/## Professional Summary\s+([\s\S]+?)(?=##|$)/);
+      const summaryText = summaryMatch ? summaryMatch[1].trim() : '';
+      
+      if (summaryText) {
+        updatePersonalInfo({ summary: summaryText });
+      }
+    }
   };
 
   return (
@@ -83,14 +99,10 @@ const PersonalInfoForm = () => {
           className="h-32"
         />
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="flex items-center gap-1 text-resume-primary"
-          >
-            <Sparkles size={16} />
-            Generate with AI
-          </Button>
+          <AIGenerateButton 
+            onClick={handleGenerateSummary}
+            isGenerating={isGenerating}
+          />
         </div>
       </div>
     </div>
@@ -100,6 +112,7 @@ const PersonalInfoForm = () => {
 const ExperienceForm = () => {
   const { resumeData, updateExperiences } = useResume();
   const [experiences, setExperiences] = useState(resumeData.experiences);
+  const { generateContent, isGenerating } = useAIGenerator();
 
   const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -130,6 +143,49 @@ const ExperienceForm = () => {
       const updatedExperiences = experiences.filter((_, i) => i !== index);
       setExperiences(updatedExperiences);
       updateExperiences(updatedExperiences);
+    }
+  };
+
+  const handleGenerateDescription = async (index: number) => {
+    const experience = experiences[index];
+    if (!experience.title || !experience.company) {
+      return;
+    }
+
+    // Create a minimal resume data object focused on this experience
+    const focusedResumeData = {
+      ...resumeData,
+      experiences: [experience]
+    };
+
+    const generatedContent = await generateContent(focusedResumeData, 'resume');
+    if (generatedContent) {
+      // Extract just the job description for this experience
+      const regex = new RegExp(`${experience.title}.*?\\n(.*?)(?=###|##|$)`, 's');
+      const descriptionMatch = generatedContent.match(regex);
+      
+      if (descriptionMatch && descriptionMatch[1]) {
+        // Extract bullet points if they exist
+        const bulletPoints = descriptionMatch[1].match(/- (.*?)(?=\n|$)/g);
+        
+        let descriptionText = '';
+        if (bulletPoints) {
+          descriptionText = bulletPoints.map(point => point.replace('- ', '').trim()).join('\n• ');
+          if (descriptionText) {
+            descriptionText = '• ' + descriptionText;
+          }
+        } else {
+          descriptionText = descriptionMatch[1].trim();
+        }
+        
+        const updatedExperiences = [...experiences];
+        updatedExperiences[index] = {
+          ...updatedExperiences[index],
+          description: descriptionText,
+        };
+        setExperiences(updatedExperiences);
+        updateExperiences(updatedExperiences);
+      }
     }
   };
 
@@ -218,14 +274,11 @@ const ExperienceForm = () => {
                 className="h-32"
               />
               <div className="flex justify-end">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-1 text-resume-primary"
-                >
-                  <Sparkles size={16} />
-                  Generate with AI
-                </Button>
+                <AIGenerateButton 
+                  onClick={() => handleGenerateDescription(index)}
+                  isGenerating={isGenerating}
+                  text="Generate Description"
+                />
               </div>
             </div>
           </CardContent>
@@ -609,6 +662,7 @@ const ResumeFormInner = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { resumeData, setGeneratedContent } = useResume();
+  const { generateContent, isGenerating } = useAIGenerator();
 
   const tabs = [
     { id: "personal", label: "Personal Info" },
@@ -634,7 +688,7 @@ const ResumeFormInner = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Check if essential fields are filled
     if (!resumeData.personalInfo.name || !resumeData.personalInfo.email) {
       toast({
@@ -646,18 +700,45 @@ const ResumeFormInner = () => {
       return;
     }
 
-    // Generate mock resume and cover letter content based on user input
-    setGeneratedContent({
-      resumeContent: generateMockResumeContent(resumeData),
-      coverLetterContent: generateMockCoverLetterContent(resumeData),
-    });
-    
     toast({
-      title: "Resume Generated",
-      description: "Your resume has been successfully created!",
+      title: "Generating Content",
+      description: "We're creating your resume and cover letter with AI...",
     });
-    
-    navigate("/resume-preview");
+
+    try {
+      // Generate resume content
+      const resumeContent = await generateContent(resumeData, 'resume');
+      
+      // Generate cover letter
+      const coverLetterContent = await generateContent(resumeData, 'coverLetter');
+      
+      if (resumeContent && coverLetterContent) {
+        setGeneratedContent({
+          resumeContent,
+          coverLetterContent
+        });
+        
+        toast({
+          title: "Resume Generated",
+          description: "Your resume has been successfully created!",
+        });
+        
+        navigate("/resume-preview");
+      } else {
+        toast({
+          title: "Generation Issue",
+          description: "There was a problem generating your content. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating content:", error);
+      toast({
+        title: "Generation Failed",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Helper function to generate mock resume content
@@ -781,10 +862,24 @@ ${data.personalInfo.name}
               <Button
                 type="button"
                 onClick={handleNextTab}
+                disabled={isGenerating}
                 className="flex items-center gap-2"
               >
-                {currentTab === "additional" ? "Generate Resume" : "Next"}
-                {currentTab !== "additional" && <ChevronRight size={16} />}
+                {currentTab === "additional" ? (
+                  isGenerating ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-1" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Resume"
+                  )
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight size={16} />
+                  </>
+                )}
               </Button>
             </div>
           </div>
