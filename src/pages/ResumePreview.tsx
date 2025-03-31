@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,8 +17,13 @@ const ResumePreviewInner = () => {
   const { toast } = useToast();
   const { resumeData, generatedContent } = useResume();
 
+  useEffect(() => {
+    if (!generatedContent) {
+      navigate("/resume-form");
+    }
+  }, [generatedContent, navigate]);
+
   if (!generatedContent) {
-    navigate("/resume-form");
     return null;
   }
 

@@ -13,9 +13,10 @@ export const useAIGenerator = () => {
     setIsGenerating(true);
 
     try {
-      // If user is not logged in, provide demo content instead of failing
+      // If user is not logged in or we're in demo mode, provide demo content
       if (!currentUser) {
         console.log('No authenticated user found, using demo content instead');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Add small delay to simulate API call
         return generateDemoContent(resumeData, type);
       }
 
