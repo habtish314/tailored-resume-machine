@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -28,11 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.email);
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
       }
@@ -68,17 +71,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name: name,
           },
+          // For development, set this to true to bypass email verification
+          emailRedirectTo: window.location.origin + '/dashboard',
         },
       });
       
       if (error) throw error;
+      
+      // Check if the user needs to confirm their email
+      if (data?.user && data.user.identities && data.user.identities.length === 0) {
+        toast({
+          title: "Email already exists",
+          description: "This email is already registered. Please log in instead.",
+          variant: "destructive",
+        });
+        throw new Error("Email already registered");
+      }
+      
+      // If we're in development mode and confirmation is required but not auto-confirmed
+      if (data?.user && !data.session) {
+        toast({
+          title: "Check your email",
+          description: "We've sent a confirmation link to your email address.",
+        });
+      }
     } catch (error) {
       console.error('Signup error:', error);
       throw error;

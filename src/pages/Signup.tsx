@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Mail, Linkedin } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -16,6 +17,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showConfirmMessage, setShowConfirmMessage] = useState(false);
   const { signup, googleLogin, linkedinLogin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,17 +46,26 @@ const Signup = () => {
     try {
       setLoading(true);
       await signup(email, password, name);
+      
+      // Check if we need to show the confirmation email message
+      setShowConfirmMessage(true);
+      
       toast({
         title: "Success",
-        description: "Your account has been created successfully. Check your email for confirmation.",
+        description: "Your account has been created.",
       });
-      navigate("/dashboard");
+      
+      // Don't navigate automatically - wait for confirmation or user action
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
-      });
+      if (error.message === "Email already registered") {
+        // This is handled by the toast in the AuthContext
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create account",
+          variant: "destructive",
+        });
+      }
       console.error(error);
     } finally {
       setLoading(false);
@@ -93,6 +104,10 @@ const Signup = () => {
     }
   };
 
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -104,115 +119,140 @@ const Signup = () => {
               Create an Account
             </h1>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="********"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating account...
-                  </span>
-                ) : (
-                  "Sign Up"
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>
-              
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleGoogleSignup}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Google
-                </Button>
+            {showConfirmMessage ? (
+              <div className="space-y-6">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertTitle className="text-blue-800">Check your email</AlertTitle>
+                  <AlertDescription className="text-blue-700">
+                    We've sent a confirmation link to {email}. Please check your inbox and click the link to activate your account.
+                  </AlertDescription>
+                </Alert>
                 
-                <Button 
-                  variant="outline" 
-                  onClick={handleLinkedInSignup}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  <Linkedin className="mr-2 h-4 w-4" />
-                  LinkedIn
-                </Button>
+                <div className="space-y-4">
+                  <p className="text-center text-gray-600">
+                    Didn't receive the email? Check your spam folder or try again.
+                  </p>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleLoginClick}
+                  >
+                    Go to Login
+                  </Button>
+                </div>
               </div>
-            </div>
-            
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Already have an account?{" "}
-                <Link to="/login" className="text-resume-accent hover:underline">
-                  Log in
-                </Link>
-              </p>
-            </div>
+            ) : (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Doe"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="********"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="********"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating account...
+                      </span>
+                    ) : (
+                      "Sign Up"
+                    )}
+                  </Button>
+                </form>
+                
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleGoogleSignup}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      Google
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      onClick={handleLinkedInSignup}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      <Linkedin className="mr-2 h-4 w-4" />
+                      LinkedIn
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="mt-6 text-center">
+                  <p className="text-gray-600">
+                    Already have an account?{" "}
+                    <Link to="/login" className="text-resume-accent hover:underline">
+                      Log in
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>
