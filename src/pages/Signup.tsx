@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-// Replace Google with Mail icon as alternative
 import { Mail, Linkedin } from "lucide-react";
 
 const Signup = () => {
@@ -16,7 +15,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, googleLogin, linkedinLogin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,13 +45,13 @@ const Signup = () => {
       await signup(email, password, name);
       toast({
         title: "Success",
-        description: "Your account has been created successfully",
+        description: "Your account has been created successfully. Check your email for confirmation.",
       });
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create account",
+        description: error.message || "Failed to create account",
         variant: "destructive",
       });
       console.error(error);
@@ -64,21 +63,15 @@ const Signup = () => {
   const handleGoogleSignup = async () => {
     try {
       setLoading(true);
-      // This would be replaced with actual Google authentication
-      await signup("demo@example.com", "password", "Demo User");
-      toast({
-        title: "Success",
-        description: "Your account has been created with Google successfully",
-      });
-      navigate("/dashboard");
-    } catch (error) {
+      await googleLogin();
+      // The redirect will be handled by Supabase, so no need to navigate here
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create account with Google",
+        description: error.message || "Failed to create account with Google",
         variant: "destructive",
       });
       console.error(error);
-    } finally {
       setLoading(false);
     }
   };
@@ -86,21 +79,15 @@ const Signup = () => {
   const handleLinkedInSignup = async () => {
     try {
       setLoading(true);
-      // This would be replaced with actual LinkedIn authentication
-      await signup("demo@example.com", "password", "Demo User");
-      toast({
-        title: "Success",
-        description: "Your account has been created with LinkedIn successfully",
-      });
-      navigate("/dashboard");
-    } catch (error) {
+      await linkedinLogin();
+      // The redirect will be handled by Supabase, so no need to navigate here
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create account with LinkedIn",
+        description: error.message || "Failed to create account with LinkedIn",
         variant: "destructive",
       });
       console.error(error);
-    } finally {
       setLoading(false);
     }
   };

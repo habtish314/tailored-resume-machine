@@ -7,14 +7,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-// Replace Google and Linkedin with available icons
 import { Mail, Linkedin } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin, linkedinLogin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -38,10 +37,10 @@ const Login = () => {
         description: "You've been logged in successfully",
       });
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to log in. Please check your credentials.",
+        description: error.message || "Failed to log in. Please check your credentials.",
         variant: "destructive",
       });
       console.error(error);
@@ -53,21 +52,15 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      // This would be replaced with actual Google authentication
-      await login("demo@example.com", "password");
-      toast({
-        title: "Success",
-        description: "You've been logged in with Google successfully",
-      });
-      navigate("/dashboard");
-    } catch (error) {
+      await googleLogin();
+      // The redirect will be handled by Supabase, so no need to navigate here
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to log in with Google",
+        description: error.message || "Failed to log in with Google",
         variant: "destructive",
       });
       console.error(error);
-    } finally {
       setLoading(false);
     }
   };
@@ -75,21 +68,15 @@ const Login = () => {
   const handleLinkedInLogin = async () => {
     try {
       setLoading(true);
-      // This would be replaced with actual LinkedIn authentication
-      await login("demo@example.com", "password");
-      toast({
-        title: "Success",
-        description: "You've been logged in with LinkedIn successfully",
-      });
-      navigate("/dashboard");
-    } catch (error) {
+      await linkedinLogin();
+      // The redirect will be handled by Supabase, so no need to navigate here
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to log in with LinkedIn",
+        description: error.message || "Failed to log in with LinkedIn",
         variant: "destructive",
       });
       console.error(error);
-    } finally {
       setLoading(false);
     }
   };

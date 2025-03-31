@@ -1,18 +1,17 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   currentUser: User | null;
+  session: Session | null;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
+  logout: () => Promise<void>;
+  googleLogin: () => Promise<void>;
+  linkedinLogin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,32 +26,37 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('resumeAiUser');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        setSession(newSession);
+        setCurrentUser(newSession?.user ?? null);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setCurrentUser(initialSession?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call for authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, create a mock user
-      const user = {
-        id: '1',
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0]
-      };
+        password,
+      });
       
-      setCurrentUser(user);
-      localStorage.setItem('resumeAiUser', JSON.stringify(user));
+      if (error) throw error;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -64,18 +68,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call for registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, create a mock user
-      const user = {
-        id: Date.now().toString(),
+      const { error } = await supabase.auth.signUp({
         email,
-        name
-      };
+        password,
+        options: {
+          data: {
+            name: name,
+          },
+        },
+      });
       
-      setCurrentUser(user);
-      localStorage.setItem('resumeAiUser', JSON.stringify(user));
+      if (error) throw error;
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -84,17 +87,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('resumeAiUser');
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  const googleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    }
+  };
+
+  const linkedinLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin',
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('LinkedIn login error:', error);
+      throw error;
+    }
   };
 
   const value: AuthContextType = {
     currentUser,
+    session,
+    isLoading,
     login,
     signup,
     logout,
-    isLoading
+    googleLogin,
+    linkedinLogin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
