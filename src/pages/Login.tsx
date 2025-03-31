@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { Google, Linkedin } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -41,6 +42,50 @@ const Login = () => {
       toast({
         title: "Error",
         description: "Failed to log in. Please check your credentials.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      // This would be replaced with actual Google authentication
+      await login("demo@example.com", "password");
+      toast({
+        title: "Success",
+        description: "You've been logged in with Google successfully",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log in with Google",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLinkedInLogin = async () => {
+    try {
+      setLoading(true);
+      // This would be replaced with actual LinkedIn authentication
+      await login("demo@example.com", "password");
+      toast({
+        title: "Success",
+        description: "You've been logged in with LinkedIn successfully",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log in with LinkedIn",
         variant: "destructive",
       });
       console.error(error);
@@ -103,6 +148,39 @@ const Login = () => {
                 )}
               </Button>
             </form>
+            
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+              
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  <Google className="mr-2 h-4 w-4" />
+                  Google
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleLinkedInLogin}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  <Linkedin className="mr-2 h-4 w-4" />
+                  LinkedIn
+                </Button>
+              </div>
+            </div>
             
             <div className="mt-6 text-center">
               <p className="text-gray-600">
