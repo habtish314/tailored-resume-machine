@@ -101,6 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        }
       });
       if (error) throw error;
     } catch (error) {
@@ -112,9 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const linkedinLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'linkedin',
+        provider: 'linkedin_oidc',
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        }
       });
       if (error) throw error;
+      
     } catch (error) {
       console.error('LinkedIn login error:', error);
       throw error;

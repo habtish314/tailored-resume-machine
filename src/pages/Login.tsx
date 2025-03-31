@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,7 +54,7 @@ const Login = () => {
     try {
       setLoading(true);
       await googleLogin();
-      // The redirect will be handled by Supabase, so no need to navigate here
+      // The redirect will be handled by the OAuth provider and the redirectTo option
     } catch (error: any) {
       toast({
         title: "Error",
@@ -69,7 +70,7 @@ const Login = () => {
     try {
       setLoading(true);
       await linkedinLogin();
-      // The redirect will be handled by Supabase, so no need to navigate here
+      // The redirect will be handled by the OAuth provider and the redirectTo option
     } catch (error: any) {
       toast({
         title: "Error",
