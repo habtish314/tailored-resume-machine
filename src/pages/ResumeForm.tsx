@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import Footer from "@/components/Footer";
 import { ResumeProvider } from "@/contexts/ResumeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Trash } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash, Sparkles } from "lucide-react";
 import { useResume } from "@/contexts/ResumeContext";
 import { useAIGenerator } from "@/hooks/useAIGenerator";
 import AIGenerateButton from "@/components/AIGenerateButton";
