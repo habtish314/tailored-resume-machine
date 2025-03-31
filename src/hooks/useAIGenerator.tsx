@@ -9,7 +9,7 @@ export const useAIGenerator = () => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
-  const generateContent = async (resumeData: any, type: 'resume' | 'coverLetter', customPrompt?: string) => {
+  const generateContent = async (resumeData: any, type: 'resume' | 'coverLetter' | 'analysis', customPrompt?: string) => {
     setIsGenerating(true);
 
     try {
@@ -17,7 +17,9 @@ export const useAIGenerator = () => {
       if (!currentUser) {
         console.log('No authenticated user found, using demo content instead');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Add small delay to simulate API call
-        return generateDemoContent(resumeData, type);
+        return type === 'analysis' 
+          ? generateDemoAnalysis(resumeData)
+          : generateDemoContent(resumeData, type);
       }
 
       // Attempt to call the Supabase function with enhanced error handling
@@ -40,12 +42,14 @@ export const useAIGenerator = () => {
             description: "We're having trouble connecting to our AI service. Using sample content instead.",
             variant: "default",
           });
-          return generateDemoContent(resumeData, type);
+          return type === 'analysis' 
+            ? generateDemoAnalysis(resumeData)
+            : generateDemoContent(resumeData, type);
         }
 
         toast({
           title: "Content Generated",
-          description: `Your ${type === 'resume' ? 'resume' : 'cover letter'} has been generated successfully.`,
+          description: `Your ${type === 'resume' ? 'resume' : type === 'coverLetter' ? 'cover letter' : 'analysis'} has been generated successfully.`,
         });
 
         return data.content;
@@ -57,7 +61,9 @@ export const useAIGenerator = () => {
           description: "We're having trouble connecting to our AI service. Using sample content instead.",
           variant: "default",
         });
-        return generateDemoContent(resumeData, type);
+        return type === 'analysis' 
+          ? generateDemoAnalysis(resumeData)
+          : generateDemoContent(resumeData, type);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -66,7 +72,9 @@ export const useAIGenerator = () => {
         description: "An unexpected error occurred. Using sample content instead.",
         variant: "default",
       });
-      return generateDemoContent(resumeData, type);
+      return type === 'analysis' 
+        ? generateDemoAnalysis(resumeData)
+        : generateDemoContent(resumeData, type);
     } finally {
       setIsGenerating(false);
     }
@@ -102,17 +110,80 @@ export const useAIGenerator = () => {
     }
   };
 
+  // Generate resume analysis
+  const generateResumeAnalysis = async (resumeData: any, resumeContent: string) => {
+    try {
+      setIsGenerating(true);
+      const analysis = await generateContent(
+        { ...resumeData, resumeContent }, 
+        'analysis',
+        'Provide a detailed analysis of this resume including strengths, weaknesses, and suggestions for improvement'
+      );
+      
+      return analysis;
+    } catch (error) {
+      console.error('Error generating resume analysis:', error);
+      return generateDemoAnalysis(resumeData);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Function to generate demo analysis content when the real AI service isn't available
+  const generateDemoAnalysis = (resumeData: any): any => {
+    // Create a mock analysis response
+    return {
+      score: {
+        overall: 78,
+        content: 75,
+        structure: 80,
+        relevance: 79
+      },
+      strengths: [
+        "Clear presentation of work experience",
+        "Good organization of sections",
+        "Professional summary provides a good overview"
+      ],
+      weaknesses: [
+        "Could use more quantifiable achievements",
+        "Skills section could be more comprehensive",
+        "Some formatting inconsistencies"
+      ],
+      suggestions: [
+        {
+          section: "Experience",
+          issue: "Descriptions are somewhat general",
+          suggestion: "Add more specific achievements with metrics and numbers to demonstrate impact"
+        },
+        {
+          section: "Skills",
+          issue: "Limited list of technical skills",
+          suggestion: "Expand your skills section to showcase more of your relevant abilities"
+        },
+        {
+          section: "Summary",
+          issue: "Professional summary could be more targeted",
+          suggestion: "Tailor your summary to highlight your most impressive achievements and career goals"
+        }
+      ]
+    };
+  };
+
   // Function to generate demo content when the real AI service isn't available
   const generateDemoContent = (resumeData: any, type: 'resume' | 'coverLetter'): string => {
     const { personalInfo, experiences, education, skills } = resumeData;
     
     if (type === 'resume') {
       return `# ${personalInfo.name || 'Your Name'}
+${personalInfo.jobTitle ? `## ${personalInfo.jobTitle}` : ''}
 
 ## Contact
 - Email: ${personalInfo.email || 'your.email@example.com'}
 - Phone: ${personalInfo.phone || '(123) 456-7890'}
 - Location: ${personalInfo.location || 'City, State'}
+${personalInfo.website ? `- Website: ${personalInfo.website}` : ''}
+${personalInfo.linkedin ? `- LinkedIn: ${personalInfo.linkedin}` : ''}
+${personalInfo.github ? `- GitHub: ${personalInfo.github}` : ''}
 
 ## Professional Summary
 ${personalInfo.summary || 'A dedicated professional with experience in various fields seeking new opportunities.'}
@@ -161,6 +232,7 @@ ${personalInfo.phone || '(123) 456-7890'}`;
   return {
     generateContent,
     generateFullResume,
+    generateResumeAnalysis,
     isGenerating
   };
 };

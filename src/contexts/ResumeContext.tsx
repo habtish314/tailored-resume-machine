@@ -25,6 +25,10 @@ interface ResumeData {
     phone: string;
     location: string;
     summary: string;
+    jobTitle?: string;
+    website?: string;
+    linkedin?: string;
+    github?: string;
   };
   experiences: Experience[];
   education: Education[];
@@ -58,6 +62,10 @@ const defaultResumeData: ResumeData = {
     phone: '',
     location: '',
     summary: '',
+    jobTitle: '',
+    website: '',
+    linkedin: '',
+    github: '',
   },
   experiences: [{
     title: '',

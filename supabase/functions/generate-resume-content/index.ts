@@ -71,6 +71,8 @@ Format output in clean, readable markdown that will look professional when rende
     if (type === 'resume') {
       prompt = `Create a professional resume for ${resumeData.personalInfo.name}, who has the following information:
       
+Professional Title: ${resumeData.personalInfo.jobTitle || 'Not specified'}
+      
 Professional Summary: ${resumeData.personalInfo.summary || 'No summary provided'}
 
 Experience:
@@ -96,6 +98,8 @@ Please create a well-formatted, professional resume in markdown format. Be conci
     } else if (type === 'coverLetter') {
       prompt = `Create a professional cover letter for ${resumeData.personalInfo.name}, who has the following information:
       
+Professional Title: ${resumeData.personalInfo.jobTitle || 'Not specified'}
+      
 Professional Summary: ${resumeData.personalInfo.summary || 'No summary provided'}
 
 Experience:
@@ -107,6 +111,43 @@ ${resumeData.experiences.map(exp =>
 Skills: ${resumeData.skills.filter(Boolean).join(', ')}
 
 Please write a general cover letter that can be customized for specific job applications. The cover letter should be in markdown format, professional in tone, and highlight key skills and experiences. Do not reference a specific company, but leave placeholders like [Company Name] and [Position] that can be filled in later. ${customPrompt}`;
+    } else if (type === 'analysis') {
+      // For resume analysis
+      systemPrompt = `You are an expert resume reviewer who analyzes resumes and provides detailed feedback. 
+You assess resumes based on content quality, structure/formatting, and relevance/impact.
+Your analysis is honest but constructive, aimed at helping job seekers improve their resumes.`;
+
+      prompt = `Analyze the following resume and provide detailed feedback:
+
+${resumeData.resumeContent}
+
+Please provide a comprehensive analysis including:
+1. An overall score (0-100) and scores for content quality, structure, and relevance
+2. 3-5 specific strengths of the resume
+3. 3-5 specific weaknesses or areas for improvement
+4. Detailed suggestions for improvement for each section (work experience, education, skills, etc.)
+
+Format your response as a JSON object with the following structure:
+{
+  "score": {
+    "overall": number,
+    "content": number,
+    "structure": number,
+    "relevance": number
+  },
+  "strengths": [string, string, ...],
+  "weaknesses": [string, string, ...],
+  "suggestions": [
+    {
+      "section": string,
+      "issue": string,
+      "suggestion": string
+    },
+    ...
+  ]
+}
+
+${customPrompt}`;
     }
 
     console.log(`Generating ${type} for user ${user.id} with style: ${style}`);
@@ -128,6 +169,7 @@ Please write a general cover letter that can be customized for specific job appl
           { role: 'user', content: prompt }
         ],
         temperature: style === 'creative' ? 0.8 : 0.6, // Adjust creativity based on style
+        response_format: type === 'analysis' ? { type: "json_object" } : undefined
       }),
     });
 

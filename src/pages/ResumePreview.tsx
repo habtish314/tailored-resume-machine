@@ -8,11 +8,13 @@ import Footer from "@/components/Footer";
 import { ResumeProvider, useResume } from "@/contexts/ResumeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Download, ArrowLeft, FileText, MessageSquare } from "lucide-react";
+import { Download, ArrowLeft, FileText, MessageSquare, Star, AlertCircle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import ResumeRatingCard from "@/components/resume/ResumeRatingCard";
 
 const ResumePreviewInner = () => {
   const [activeTab, setActiveTab] = useState("resume");
+  const [showRating, setShowRating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { resumeData, generatedContent } = useResume();
@@ -75,6 +77,10 @@ const ResumePreviewInner = () => {
     navigate("/dashboard");
   };
 
+  const toggleRating = () => {
+    setShowRating(prev => !prev);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -93,7 +99,7 @@ const ResumePreviewInner = () => {
               <h1 className="text-3xl font-bold text-resume-primary">Preview</h1>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant="outline"
                 onClick={() => handleDownload(activeTab === "resume" ? "resume" : "coverLetter")}
@@ -109,8 +115,25 @@ const ResumePreviewInner = () => {
               >
                 Save to Dashboard
               </Button>
+              
+              <Button
+                variant={showRating ? "default" : "outline"}
+                onClick={toggleRating}
+                className="flex items-center gap-2"
+              >
+                <Star size={16} />
+                {showRating ? "Hide Rating" : "Rate Resume"}
+              </Button>
             </div>
           </div>
+          
+          {showRating && (
+            <ResumeRatingCard 
+              resumeData={resumeData} 
+              resumeContent={generatedContent.resumeContent}
+              onClose={() => setShowRating(false)}
+            />
+          )}
           
           <Tabs defaultValue="resume" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full max-w-md mx-auto grid grid-cols-2 mb-8">
